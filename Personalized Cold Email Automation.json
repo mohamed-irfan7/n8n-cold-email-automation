@@ -1,0 +1,365 @@
+{
+  "name": "Personalized Cold Email Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "addcc154-fb2c-4b19-9b0b-f4f4b82c6a42",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        48,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Pn21yVvodcYJfXURzv-D-F9pZJamMLEBN5lx1zJD7Zo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Pn21yVvodcYJfXURzv-D-F9pZJamMLEBN5lx1zJD7Zo/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "376b188d-f68a-42b9-9fda-176beaa292f1",
+      "name": "Read Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        272,
+        144
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7tQLAiZkpzQfD0L7",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "66875cf5-e643-48c8-a2f8-c3d3c6fd8f48",
+      "name": "Extract Customer Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        496,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.businessName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "condition2",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "condition3",
+              "leftValue": "={{ $json.businessType }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "condition4",
+              "leftValue": "={{ $json.platform }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "condition5",
+              "leftValue": "={{ $json.productService }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "21336aa9-4526-4442-813d-3291da71b130",
+              "leftValue": "={{ $json.email.includes('@') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9267b883-72cd-4d2f-96b5-fccb3014fbcf",
+      "name": "Check Data Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        672,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst senderName = \"Mohamed\";  \nconst senderContact = \"officialmohamed65@gmail.com / +91-XXXXXXXXXX\";  \n\nconst updatedItems = items.map((item, index) => {\n  const businessName = item.json[\"Business Name\"];\n  const businessType = item.json[\"Business Type\"];\n  const platform = item.json[\"Platform\"];\n  const product = item.json[\"Product/Service\"];\n  const location = item.json[\"Location\"];\n\n  // ✅ FIX: Get the first valid email\n  let rawEmail = item.json[\"Email(s)\"] || item.json[\"Email\"] || \"\";\n  let email = rawEmail.split(\"/\")[0].trim();   // take only the first one\n\n  let subject;\n  const safeBusinessType = (businessType || \"\").toLowerCase();\n\n  if (safeBusinessType.includes(\"fashion\") || safeBusinessType.includes(\"clothing\")) {\n    subject = `Loved your ${product} collection on ${platform}`;\n  } else if (safeBusinessType.includes(\"food\") || safeBusinessType.includes(\"restaurant\")) {\n    subject = `Your ${product} on ${platform} looks amazing!`;\n  } else if (safeBusinessType.includes(\"salon\") || safeBusinessType.includes(\"beauty\")) {\n    subject = `Impressed by your ${product} services on ${platform}`;\n  } else {\n    subject = `Great ${product} showcase on ${platform}, ${businessName}!`;\n  }\n\n  const emailBody = `Hi ${businessName},\n\nI came across your ${platform} ${businessType === 'fashion' ? 'channel' : 'page'} showcasing your ${product}, and I really liked how you present your collection. It's clear that many people are noticing your products${location ? ' in ' + location : ''}.\n\nOne thing I noticed is that you don't seem to have a dedicated website. A website can help you display your full catalog, take online orders, and reach more customers outside ${platform}. Many ${businessType} shops are growing faster because customers prefer browsing collections online before deciding.\n\nI'm a freelancer helping small businesses like yours set up simple, affordable websites that attract more customers. If you'd like, I can share some quick ideas tailored to your ${businessType} business.\n\nWould you be open to a quick chat?\n\nBest regards,  \n${senderName}  \n${senderContact}`;\n\n  return {\n    json: {\n      row_number: index + 2,\n      \"Business Name\": businessName,\n      Email: email,   // ✅ clean email\n      \"Business Type\": businessType,\n      emailSubject: subject,\n      emailBody: emailBody,\n      Status: email ? \"Ready to Send\" : \"Invalid Email\"\n    }\n  };\n});\n\n// ✅ Only keep rows with valid emails\nreturn updatedItems.filter(item => item.json.Status === \"Ready to Send\");\n"
+      },
+      "id": "8ce6999a-974f-468b-8ecb-7aec8509c287",
+      "name": "Create Personalized Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        144
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json[\"Email\"] }}\n",
+        "subject": "={{ $json[\"emailSubject\"] }}\n",
+        "emailType": "text",
+        "message": "={{ $json[\"emailBody\"] }}\n",
+        "options": {}
+      },
+      "id": "4d0ecdfe-3f18-4bce-a82b-4557049b194e",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        144
+      ],
+      "webhookId": "33ec5022-5668-402a-9516-d074ebc4ffd2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "AVYAbJAgHKp5M2w6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "06e6f062-f365-4528-b549-40d88347843c",
+      "name": "Wait Between Emails",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        144
+      ],
+      "webhookId": "eda8bb6f-1b91-4941-9696-296bda2a1a32"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1fjJTxlfFR5wg72Z5d3CUts1CiW0FxULMnJipGlka6TY",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fjJTxlfFR5wg72Z5d3CUts1CiW0FxULMnJipGlka6TY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5f8e5c7a-d67b-4893-9422-d6a75aaf8816",
+      "name": "Update Status in Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1552,
+        144
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7tQLAiZkpzQfD0L7",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Extract Customer Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Customer Data": {
+      "main": [
+        [
+          {
+            "node": "Check Data Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Data Complete": {
+      "main": [
+        [
+          {
+            "node": "Create Personalized Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Personalized Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Personalized Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Wait Between Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Emails": {
+      "main": [
+        [
+          {
+            "node": "Update Status in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "488c3a9f-da92-4b77-8656-6f5faad9fd45",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "072944c7c61d234cc5a4035f4a0615b22f8ad1385b29c8e6d8f83b9bdadd2fd8"
+  },
+  "id": "rC8vELbe5Fg9jGiw",
+  "tags": []
+}
