@@ -1,5 +1,4 @@
-Perfect 👍 Let’s make a clean, professional **README.md** for your project.
-You can copy-paste this into your repo root file as `README.md`.
+
 
 ---
 
