@@ -25,6 +25,8 @@ This project is an **n8n workflow** that automates sending **personalized cold e
 ```
 n8n-email-workflow/
 │── workflow.json   # Exported n8n workflow
+│── README.md       # Project documentation (this file)
+
 ```
 
 ---
